@@ -1,0 +1,6 @@
+# Entorno virtual de Python
+venv/
+
+# Caché de ejecución de Python
+__pycache__/
+*.py[cod]

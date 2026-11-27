@@ -22,7 +22,7 @@ Sigue estos pasos para ejecutar el proyecto de manera local:
 1. Clonar el repositorio
 Si es estas en github clonalo desde el repositorio de este
 Bash
-git clone <Aqui pones el URL del repositorio Alita>
+git clone <https://github.com/itsalexis12/proyecto_final_ia.git>
 cd proyecto_final_ia
 2. Crear y activar el entorno virtual
 --En Windows (PowerShell):

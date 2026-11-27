@@ -119,7 +119,104 @@ def algoritmo_genetico(
     }
    
 #3.2 Endpoint 2: ML supervisado - Árbol de decisión (POST /arbol_decision)
- 
+ def entrenar_arbol_decision():
+    SEED = 10
+    ruta_csv = os.path.join(os.path.dirname(__file__), "dataset_cardiaco_simulado.csv")
+    
+    if not os.path.exists(ruta_csv):
+        raise FileNotFoundError(
+            f"No se encontró 'dataset_cardiaco_simulado.csv' en {os.path.dirname(__file__)}. "
+            "Colócalo junto a services.py."
+        )
+
+    df_cardio = pd.read_csv(ruta_csv)
+    x = df_cardio.drop(columns=['DiagnosticoCardiopatia'])
+    y = df_cardio['DiagnosticoCardiopatia']
+
+    X_train, _, y_train, _ = train_test_split(
+        x, y, test_size=0.2, stratify=y, random_state=SEED
+    )
+
+    # Árbol podado exacto de tu práctica
+    arbol_podado = DecisionTreeClassifier(
+        random_state=SEED,
+        criterion='entropy',
+        max_depth=3,
+        min_samples_leaf=5
+    )
+    arbol_podado.fit(X_train, y_train)
+    return arbol_podado, list(x.columns)
+
+# Entrenamos el modelo una vez al iniciar la API
+MODELO_ARBOL, COLUMNAS_ARBOL = entrenar_arbol_decision()
+
+def evaluar_paciente_arbol(paciente: ArbolDecisionRequest) -> ArbolDecisionResponse:
+    # Armamos el DataFrame con los mismos nombres de columnas del CSV
+    datos_entrada = pd.DataFrame([{
+        COLUMNAS_ARBOL[0]: paciente.edad,
+        COLUMNAS_ARBOL[1]: paciente.presion_sistolica,
+        COLUMNAS_ARBOL[2]: paciente.colesterol,
+        COLUMNAS_ARBOL[3]: paciente.frecuencia_max,
+        COLUMNAS_ARBOL[4]: paciente.angina_ejercicio
+    }])
+
+    clase = int(MODELO_ARBOL.predict(datos_entrada)[0])
+    probabilidades = MODELO_ARBOL.predict_proba(datos_entrada)[0]
+    prob_riesgo = float(round(probabilidades[1], 2))
+
+    if clase == 1 or prob_riesgo >= 0.70:
+        diagnostico = "Riesgo de Afección Cardiaca Detectado"
+        nivel = "Alto"
+    elif prob_riesgo >= 0.40:
+        diagnostico = "Riesgo Moderado de Afección Cardiaca"
+        nivel = "Medio"
+    else:
+        diagnostico = "Sin Riesgo Significativo de Afección Cardiaca"
+        nivel = "Bajo"
+
+    return ArbolDecisionResponse(
+        estado="exitoso",
+        paciente_evaluado=paciente,
+        clase_predicha=clase,
+        diagnostico_texto=diagnostico,
+        probabilidad_riesgo=prob_riesgo,
+        nivel_riesgo=nivel
+    )
+# Entrenamos el modelo una vez al iniciar la API
+MODELO_ARBOL, COLUMNAS_ARBOL = entrenar_arbol_decision()
+
+def evaluar_paciente_arbol(paciente: ArbolDecisionRequest) -> ArbolDecisionResponse:
+    # Armamos el DataFrame con los mismos nombres de columnas del CSV
+    datos_entrada = pd.DataFrame([{
+        COLUMNAS_ARBOL[0]: paciente.edad,
+        COLUMNAS_ARBOL[1]: paciente.presion_sistolica,
+        COLUMNAS_ARBOL[2]: paciente.colesterol,
+        COLUMNAS_ARBOL[3]: paciente.frecuencia_max,
+        COLUMNAS_ARBOL[4]: paciente.angina_ejercicio
+    }])
+
+    clase = int(MODELO_ARBOL.predict(datos_entrada)[0])
+    probabilidades = MODELO_ARBOL.predict_proba(datos_entrada)[0]
+    prob_riesgo = float(round(probabilidades[1], 2))
+
+    if clase == 1 or prob_riesgo >= 0.70:
+        diagnostico = "Riesgo de Afección Cardiaca Detectado"
+        nivel = "Alto"
+    elif prob_riesgo >= 0.40:
+        diagnostico = "Riesgo Moderado de Afección Cardiaca"
+        nivel = "Medio"
+    else:
+        diagnostico = "Sin Riesgo Significativo de Afección Cardiaca"
+        nivel = "Bajo"
+
+    return ArbolDecisionResponse(
+        estado="exitoso",
+        paciente_evaluado=paciente,
+        clase_predicha=clase,
+        diagnostico_texto=diagnostico,
+        probabilidad_riesgo=prob_riesgo,
+        nivel_riesgo=nivel
+    )
 
 #3.3 Endpoint 3: ML no supervisado - Clustering K-Means (POST /cluster)
 def inicializacion_centroides(X, K):
